@@ -5,25 +5,63 @@
 #include <iostream>
 
 int main(int argc, char *argv[]) {
-  /* Initialize the Run Copy of Disk */
   Disk disk_run;
-  unsigned char buffer[BLOCK_SIZE];
-  Disk::readBlock(buffer,1);
-  for(int i=0;i<20;i++)
-  {
-       std::cout<<(int)buffer[i]<<" ";
+
+  // create objects for the relation catalog and attribute catalog
+  RecBuffer relCatBuffer(RELCAT_BLOCK);
+  RecBuffer attrCatBuffer(ATTRCAT_BLOCK);
+  RecBuffer attrCatBuffer1(ATTRCAT_BLOCK+1);
+  HeadInfo relCatHeader;
+  HeadInfo attrCatHeader;
+  HeadInfo attrCatHeader1;
+
+  // load the headers of both the blocks into relCatHeader and attrCatHeader.
+  // (we will implement these functions later)
+  relCatBuffer.getHeader(&relCatHeader);
+  attrCatBuffer.getHeader(&attrCatHeader);
+  attrCatBuffer1.getHeader(&attrCatHeader1);
+
+  for (int i=0;i<relCatHeader.numEntries;i++) {
+
+    Attribute relCatRecord[RELCAT_NO_ATTRS]; // will store the record from the relation catalog
+
+    relCatBuffer.getRecord(relCatRecord, i);
+
+    printf("Relation: %s\n", relCatRecord[RELCAT_REL_NAME_INDEX].sVal);
+
+    for (int j=0;j<attrCatHeader.numEntries;j++) {
+
+      // declare attrCatRecord and load the attribute catalog entry into it
+	Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
+	attrCatBuffer.getRecord(attrCatRecord,j);
+      if (strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal)==0) {
+
+	if(strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,"Students")==0 && strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,"Class")==0)
+	{
+		strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,"Batch");
+		attrCatBuffer.setRecord(attrCatRecord,j);
+	}
+	const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
+        printf("  %s: %s\n",attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
+      }
+    }
+    for (int j=0;j<attrCatHeader1.numEntries;j++) {
+
+      // declare attrCatRecord and load the attribute catalog entry into it
+        Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
+        attrCatBuffer1.getRecord(attrCatRecord,j);
+      if (strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal)==0) {
+
+	if(strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,"Student")==0 && strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,"Class")==0)
+        {
+                strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,"Batch");
+                attrCatBuffer1.setRecord(attrCatRecord,j);
+        }
+        const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
+        printf("  %s: %s\n",attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
+      }
+    }
+    printf("\n");
   }
-  std::cout<<"\n";
-  /*char message[]="Hello\n";
-  memcpy(buffer+20,message,7);
-  Disk::writeBlock(buffer,7000);
-  unsigned char buffer2[BLOCK_SIZE];
-  Disk::readBlock(buffer2,7000);
-  char outmessage[7];
-  memcpy(outmessage,buffer+20,7);
-  std::cout<<outmessage;*/
-  // StaticBuffer buffer;
-  // OpenRelTable cache;
   return 0;
-  //return FrontendInterface::handleFrontend(argc, argv);
 }
