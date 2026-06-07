@@ -14,10 +14,14 @@ RecBuffer::RecBuffer(int blockNum) : BlockBuffer::BlockBuffer(blockNum) {}
 
 // load the block header into the argument pointer
 int BlockBuffer::getHeader(struct HeadInfo *head) {
-  unsigned char buffer[BLOCK_SIZE];
+  unsigned char *buffer;
 
   //reading the entire disk block to the buffer
-  Disk::readBlock(buffer,this->blockNum);
+  int ret=loadBlockAndGetBufferPtr(&buffer);
+  if(ret!=SUCCESS)
+  {
+	return ret;
+  }
 
   // populate the numEntries, numAttrs and numSlots fields in *head
   memcpy(&head->numSlots, buffer + 24, 4);
@@ -37,8 +41,12 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum) {
   int attrCount = head.numAttrs;
   int slotCount = head.numSlots;
   // read the block at this.blockNum into a buffer
-  unsigned char buffer[BLOCK_SIZE];
-  Disk::readBlock(buffer,this->blockNum);
+  unsigned char *buffer;
+  int ret=loadBlockAndGetBufferPtr(&buffer);
+  if(ret!=SUCCESS)
+  {
+        return ret;
+  }
   /* record at slotNum will be at offset HEADER_SIZE + slotMapSize + (recordSize * slotNum)
      - each record will have size attrCount * ATTR_SIZE
      - slotMap will be of size slotCount
@@ -65,4 +73,26 @@ int RecBuffer::setRecord(union Attribute *rec,int slotNum){
   Disk::writeBlock(buffer,this->blockNum);
   return SUCCESS;
 }
+/*
+Used to load a block to the buffer and get a pointer to it.
+NOTE: this function expects the caller to allocate memory for the argument
+*/
+int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
+  // check whether the block is already present in the buffer using StaticBuffer.getBufferNum()
+  int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
 
+  if (bufferNum == E_BLOCKNOTINBUFFER) {
+    bufferNum = StaticBuffer::getFreeBuffer(this->blockNum);
+
+    if (bufferNum == E_OUTOFBOUND) {
+      return E_OUTOFBOUND;
+    }
+
+    Disk::readBlock(StaticBuffer::blocks[bufferNum], this->blockNum);
+  }
+
+  // store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
+  *buffPtr = StaticBuffer::blocks[bufferNum];
+
+  return SUCCESS;
+}
