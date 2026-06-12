@@ -26,6 +26,8 @@ OpenRelTable::OpenRelTable() {
   RelCacheTable::recordToRelCatEntry(relCatRecord, &relCacheEntry.relCatEntry);
   relCacheEntry.recId.block = RELCAT_BLOCK;
   relCacheEntry.recId.slot = RELCAT_SLOTNUM_FOR_RELCAT;
+  relCacheEntry.searchIndex.block=-1;
+  relCacheEntry.searchIndex.slot=-1;
 
   // allocate this on the heap because we want it to persist outside this function
   RelCacheTable::relCache[RELCAT_RELID] = (struct RelCacheEntry*)malloc(sizeof(RelCacheEntry));
@@ -53,6 +55,9 @@ OpenRelTable::OpenRelTable() {
   RelCacheTable::recordToRelCatEntry(attrRelCatRecord, &attrRelCacheEntry.relCatEntry);
   attrRelCacheEntry.recId.block = RELCAT_BLOCK;
   attrRelCacheEntry.recId.slot = RELCAT_SLOTNUM_FOR_ATTRCAT;
+  attrRelCacheEntry.searchIndex.block=-1;
+  attrRelCacheEntry.searchIndex.slot=-1;
+
 
   // allocate this on the heap because we want it to persist outside this function
   RelCacheTable::relCache[ATTRCAT_RELID] = (struct RelCacheEntry*)malloc(sizeof(RelCacheEntry));
@@ -67,7 +72,8 @@ OpenRelTable::OpenRelTable() {
   RelCacheTable::recordToRelCatEntry(StudentRelCatRecord, &StudentRelCacheEntry.relCatEntry);
   StudentRelCacheEntry.recId.block = RELCAT_BLOCK;
   StudentRelCacheEntry.recId.slot = RELCAT_SLOTNUM_FOR_ATTRCAT+1;
-
+  StudentRelCacheEntry.searchIndex.block=-1;
+  StudentRelCacheEntry.searchIndex.slot=-1;
   // allocate this on the heap because we want it to persist outside this funct>
   RelCacheTable::relCache[ATTRCAT_RELID+1] = (struct RelCacheEntry*)malloc(sizeof(RelCacheEntry));
   *(RelCacheTable::relCache[ATTRCAT_RELID+1]) = StudentRelCacheEntry;
@@ -157,6 +163,22 @@ OpenRelTable::OpenRelTable() {
   // set the value at AttrCacheTable::attrCache[ATTRCAT_RELID]
   AttrCacheTable::attrCache[ATTRCAT_RELID+1]=head;
 }
+int OpenRelTable::getRelId(char relName[ATTR_SIZE])
+{
+        if(strcmp(relName,RELCAT_RELNAME)==0)
+        {
+                return RELCAT_RELID;
+        }
+        if(strcmp(relName,ATTRCAT_RELNAME)==0)
+        {
+                return ATTRCAT_RELID;
+        }
+	if(strcmp(relName,"Students")==0)
+	{
+		return ATTRCAT_RELID+1;
+	}
+        return E_RELNOTOPEN;
+}
 OpenRelTable::~OpenRelTable() {
   for(int i=0;i<MAX_OPEN;i++)
   {
@@ -177,5 +199,4 @@ OpenRelTable::~OpenRelTable() {
         }
 	AttrCacheTable::attrCache[i]=NULL;
   }
-
 }

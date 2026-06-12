@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   Disk disk_run;
   StaticBuffer bufferr;
   OpenRelTable cache;
-  for(int i=0;i<3;i++)
+  /*for(int i=0;i<3;i++)
   {
 	RelCatEntry relCatEntry;
 	int a=RelCacheTable::getRelCatEntry(i,&relCatEntry);
@@ -20,6 +20,6 @@ int main(int argc, char *argv[]) {
 		const char* type= attrCatEntry.attrType == NUMBER ? "NUM" : "STR" ;
 		printf("  %s:%s\n",attrCatEntry.attrName,type);
 	}
-  }
-  return 0;
+  }*/
+  return FrontendInterface::handleFrontend(argc,argv);
 }

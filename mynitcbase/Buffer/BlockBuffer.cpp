@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 #include <cstring>
-
+#include  <iostream>
 // the declarations for these functions can be found in "BlockBuffer.h"
 
 BlockBuffer::BlockBuffer(int blockNum) {
@@ -65,8 +65,12 @@ int RecBuffer::setRecord(union Attribute *rec,int slotNum){
   this->getHeader(&head);
   int attrCount=head.numAttrs;
   int slotCount=head.numSlots;
-  unsigned char buffer[BLOCK_SIZE];
-  Disk::readBlock(buffer,this->blockNum);
+  unsigned char *buffer;
+  int ret=loadBlockAndGetBufferPtr(&buffer);
+  if(ret!=SUCCESS)
+  {
+	return ret;
+  }
   int recordSize=attrCount*ATTR_SIZE;
   unsigned char* slotPointer=buffer+HEADER_SIZE+slotCount+(recordSize*slotNum);
   memcpy(slotPointer,rec,recordSize);
@@ -95,4 +99,44 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
   *buffPtr = StaticBuffer::blocks[bufferNum];
 
   return SUCCESS;
+}
+int RecBuffer::getSlotMap(unsigned char *slotMap)
+{
+	
+	unsigned char* bufferPtr;
+	int ret=loadBlockAndGetBufferPtr(&bufferPtr);
+	if(ret!=SUCCESS)
+	{
+		return ret;
+	}
+	struct HeadInfo head;
+	this->getHeader(&head);
+	int slotCount=head.numSlots;
+	unsigned char* slotMapBufferPtr=bufferPtr+HEADER_SIZE;
+	memcpy(slotMap,slotMapBufferPtr,slotCount);
+	return SUCCESS;
+}
+int compareAttrs(union Attribute attr1,union Attribute attr2,int attrType)
+{
+	int diff=0;
+	if(attrType==STRING)
+	{
+		diff=strcmp(attr1.sVal,attr2.sVal);
+	}
+	else
+	{
+		diff=attr1.nVal-attr2.nVal;
+	}
+	if(diff>0)
+	{
+		return 1;
+	}
+	else if(diff<0)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
 }
