@@ -28,3 +28,44 @@ int Schema::closeRel(char relName[ATTR_SIZE]) {
   }
   return OpenRelTable::closeRel(relId);
 }
+/*Rename functions are automatically opening and closing a relation so that the renamed column or relation name is effectively written back into the disk after the completition of
+ that operation*/
+int Schema::renameRel(char oldRelName[ATTR_SIZE],char newRelName[ATTR_SIZE])
+{
+	if(strcmp(oldRelName,RELCAT_RELNAME)==0 || strcmp(newRelName,RELCAT_RELNAME)==0 || strcmp(oldRelName,ATTRCAT_RELNAME)==0 || strcmp(newRelName,ATTRCAT_RELNAME)==0)
+	{
+		return E_NOTPERMITTED;
+	}
+	int ret=-1;
+	if(OpenRelTable::getRelId(oldRelName) == E_RELNOTOPEN)
+	{
+		ret=OpenRelTable::openRel(oldRelName);
+		if(ret == E_CACHEFULL || ret == E_RELNOTEXIST)
+		{
+			return ret;
+		}
+	}
+	int retVal=BlockAccess::renameRelation(oldRelName,newRelName);
+	int ret1=OpenRelTable::closeRel(ret);
+	return retVal;
+}
+int Schema::renameAttr(char *relName,char oldAttrName[ATTR_SIZE],char newAttrName[ATTR_SIZE])
+{
+        if(strcmp(relName,RELCAT_RELNAME)==0 || strcmp(relName,ATTRCAT_RELNAME)==0)
+        {
+                return E_NOTPERMITTED;
+        }
+	int ret=-1;
+        if(OpenRelTable::getRelId(relName) == E_RELNOTOPEN)
+        {
+                ret=OpenRelTable::openRel(relName);
+                if(ret == E_CACHEFULL || ret == E_RELNOTEXIST)
+                {
+                        return ret;
+                }
+        }
+        int retVal=BlockAccess::renameAttribute(relName,oldAttrName,newAttrName);
+	int ret1=OpenRelTable::closeRel(ret);
+        return retVal;
+}
+

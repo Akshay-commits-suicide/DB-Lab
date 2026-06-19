@@ -65,6 +65,10 @@ int RecBuffer::setRecord(union Attribute *rec,int slotNum){
   this->getHeader(&head);
   int attrCount=head.numAttrs;
   int slotCount=head.numSlots;
+  if(slotNum>=slotCount || slotNum<0)
+  {
+	return E_OUTOFBOUND;
+  }
   unsigned char *buffer;
   int ret=loadBlockAndGetBufferPtr(&buffer);
   if(ret!=SUCCESS)
@@ -74,7 +78,7 @@ int RecBuffer::setRecord(union Attribute *rec,int slotNum){
   int recordSize=attrCount*ATTR_SIZE;
   unsigned char* slotPointer=buffer+HEADER_SIZE+slotCount+(recordSize*slotNum);
   memcpy(slotPointer,rec,recordSize);
-  Disk::writeBlock(buffer,this->blockNum);
+  StaticBuffer::setDirtyBit(this->blockNum);
   return SUCCESS;
 }
 /*
@@ -93,6 +97,27 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
     }
 
     Disk::readBlock(StaticBuffer::blocks[bufferNum], this->blockNum);
+  }
+  //timeStamp update....
+  //LRU Principple
+  else
+  {
+	for(int i=0;i<BUFFER_CAPACITY;i++)
+	{
+		if(StaticBuffer::metainfo[i].free == false)
+		{
+			if(i==bufferNum)
+			{
+				//The time stamp of the recently accesed block is set to 0 indicating it should have less priority in case of an overwrite
+				StaticBuffer::metainfo[i].timeStamp=0;
+			}
+			else
+			{
+				//the time stamp of the other blocks are incremented......
+				(StaticBuffer::metainfo[i].timeStamp)++;
+			}
+		}
+	}
   }
 
   // store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
