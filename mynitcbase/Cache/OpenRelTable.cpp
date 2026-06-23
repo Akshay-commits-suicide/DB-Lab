@@ -251,6 +251,15 @@ int OpenRelTable::closeRel(int relId) {
   if (tableMetaInfo[relId].free==true) {
     return E_RELNOTOPEN;
   }
+
+  if(RelCacheTable::relCache[relId]->dirty == true)
+  {
+	Attribute record[RELCAT_NO_ATTRS];
+	RelCacheTable::relCatEntryToRecord(&(RelCacheTable::relCache[relId]->relCatEntry),record);
+	RecId recId=RelCacheTable::relCache[relId]->recId;
+	RecBuffer relCatBlock(recId.block);
+	relCatBlock.setRecord(record,recId.slot);
+  }
   free(RelCacheTable::relCache[relId]);
   RelCacheTable::relCache[relId]=NULL;
   AttrCacheEntry* temp=AttrCacheTable::attrCache[relId];
