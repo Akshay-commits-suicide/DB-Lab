@@ -302,7 +302,7 @@ int OpenRelTable::getFreeOpenRelTableEntry()
 	return i;
 }
 OpenRelTable::~OpenRelTable() {
-  for(int i=0;i<MAX_OPEN;i++)
+  for(int i=2;i<MAX_OPEN;i++)
   {
 	if(RelCacheTable::relCache[i]!=NULL)
 	{
@@ -312,15 +312,44 @@ OpenRelTable::~OpenRelTable() {
 		tableMetaInfo[i].relName[0]='\0';
 	}
   }
+
+  //closing the attribute catalog relation before relation catalog.....also with commiting the changes...like deletion or creation of a relation
+  RelCatEntry attrRelCatEntry;
+  RelCacheTable::getRelCatEntry(ATTRCAT_RELID,&attrRelCatEntry);
+  if(RelCacheTable::relCache[ATTRCAT_RELID]->dirty == true)
+  {
+	Attribute record[ATTRCAT_NO_ATTRS];
+	RelCacheTable::relCatEntryToRecord(&attrRelCatEntry,record);
+	RecId recId=RelCacheTable::relCache[ATTRCAT_RELID]->recId;
+	RecBuffer relCatBlock(recId.block);
+	relCatBlock.setRecord(record,recId.slot);
+  }
+  free(RelCacheTable::relCache[ATTRCAT_RELID]);
+  RelCacheTable::relCache[ATTRCAT_RELID]=NULL;
+
+  //clossing the relation catalog relation.......
+  RelCatEntry relCatEntry;
+  RelCacheTable::getRelCatEntry(RELCAT_RELID,&relCatEntry);
+  if(RelCacheTable::relCache[RELCAT_RELID]->dirty == true)
+  {
+        Attribute record[RELCAT_NO_ATTRS];
+        RelCacheTable::relCatEntryToRecord(&relCatEntry,record);
+        RecId recId=RelCacheTable::relCache[RELCAT_RELID]->recId;
+        RecBuffer relCatBlock(recId.block);
+        relCatBlock.setRecord(record,recId.slot);
+  }
+  free(RelCacheTable::relCache[RELCAT_RELID]);
+  RelCacheTable::relCache[RELCAT_RELID]=NULL;
+
   for(int i=0;i<MAX_OPEN;i++)
   {
-	AttrCacheEntry *curr=AttrCacheTable::attrCache[i];
+        AttrCacheEntry *curr=AttrCacheTable::attrCache[i];
         while(curr!=NULL)
         {
-		AttrCacheEntry *temp=curr;
-		curr=curr->next;
+                AttrCacheEntry *temp=curr;
+                curr=curr->next;
                 free(temp);
         }
-	AttrCacheTable::attrCache[i]=NULL;
+        AttrCacheTable::attrCache[i]=NULL;
   }
 }
